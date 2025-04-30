@@ -1,0 +1,86 @@
+package org.firstinspires.ftc.teamcode.auto;
+
+import static org.firstinspires.ftc.teamcode.hardware.Movement.leadMovement.backward;
+import static org.firstinspires.ftc.teamcode.hardware.Movement.leadMovement.flagUp;
+import static org.firstinspires.ftc.teamcode.hardware.Movement.leadMovement.forward;
+import static org.firstinspires.ftc.teamcode.hardware.Movement.leadMovement.left;
+import static org.firstinspires.ftc.teamcode.hardware.Movement.leadMovement.right;
+
+import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
+import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.teamcode.hardware.Movement;
+
+@Config
+@Autonomous
+public class leadApp extends LinearOpMode { //Upload all motors and servos into the class
+    DcMotor FL; //Motors are named for the direction -FR = Front Right Motor
+    DcMotor FR;
+    DcMotor BL;
+    DcMotor BR;
+    Servo FLAG;
+    NormalizedColorSensor CS; //CS stands for Color Sensor. NAME IT THIS IN THE CONFIGURATION
+
+    public static void parkLeft(DcMotor BL, DcMotor BR, DcMotor FL, DcMotor FR, Servo FLAG){
+        Movement.leadMovement.left(4, BL, BR, FL, FR);
+        Movement.leadMovement.forward(4, BL, BR, FL, FR);
+        //This function will park the robot to the left of the flag. I put it here just for ease of reading the file.
+        //Typically it would be in the leadMovement file. In the leadMovement file are the general movement codes,
+        //left, right, backwards, turns, etc
+    }
+
+    @Override
+    public void runOpMode(){
+        FL = hardwareMap.get(DcMotor.class, "FL"); //Names each of the motors
+        FR = hardwareMap.get(DcMotor.class, "FR");
+        BL = hardwareMap.get(DcMotor.class, "BL");
+        BR = hardwareMap.get(DcMotor.class, "BR");
+
+        FLAG = hardwareMap.get(Servo.class, "FLAG"); //Names flag and color sensor
+        CS = hardwareMap.get(NormalizedColorSensor.class, "CS");
+
+        FL.setDirection(DcMotor.Direction.REVERSE);
+        FR.setDirection(DcMotor.Direction.FORWARD);
+        BL.setDirection(DcMotor.Direction.REVERSE); //Typically two motors are running in reverse
+        BR.setDirection(DcMotor.Direction.FORWARD); //Which motors might need to be changed depending on configuration
+        //This is the basic configuration that is general. It won't work for our robot, but it should for others
+
+        FL.setMode(DcMotor.RunMode.RUN_USING_ENCODER); //Sets the mode to run using encoders
+        BL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        FR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        BR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+
+        waitForStart(); //Once the code starts running
+        FLAG.setPosition(0); //The flag starts down
+
+        forward(23, BL, BR, FL, FR); //The robot moves towards the box, but keeps its distance
+
+        NormalizedRGBA colors = CS.getNormalizedColors(); //The color sensor will gather data
+
+        int red = (int)(colors.red * 255);
+        int blue = (int)(colors.blue * 255);
+        //This converts the colors into RGB values (easier to interpret)
+
+        if (red > 180 && red > blue){ //If color = red. Red just has to be more than blue, in case color sensor isn't accurate.
+            right(4, BL, BR, FL, FR);
+            forward(7, BL, BR, FL, FR);
+            left(8, BL, BR, FL, FR);
+            backward(7, BL, BR, FL, FR);
+            right(4, BL, BR, FL, FR); //The robot goes around the flag, then returns to the initial position
+        } else if (blue > 180 && blue > red){ //If color = blue. Accounts for margin of error in color sensor
+            left(4, BL, BR, FL, FR);
+            forward(7, BL, BR, FL, FR);
+            right(8, BL, BR, FL, FR);
+            backward(7, BL, BR, FL, FR);
+            left(4, BL, BR, FL, FR); //The robot goes around the flag, then returns to the initial position
+        }
+        parkLeft(BL, BR, FL, FR, FLAG); //The robot uses the park left function to the park to the left of the flag
+        flagUp(FLAG, telemetry); //The flag will be raised3
+    }
+}
